@@ -14,6 +14,7 @@ class EmbeddingService:
     def load_model(self):
         """Explicitly load the heavy model."""
         if self._model is None:
+            print("Embedding model loaded lazily...")
             self._model = SentenceTransformer('all-MiniLM-L6-v2')
     
     def _ensure_model(self):

@@ -32,17 +32,14 @@ async def startup_event():
             Base.metadata.create_all(bind=engine)
             print("Database initialized.")
             
-            # 2. Loading AI Models
-            from app.services.embedding_service import EmbeddingService
-            from app.vectorstore.faiss_store import FAISSStore
+            # Models will load lazily on usage, saving startup memory.
+            # print("Loading Embedding Model...")
+            # EmbeddingService().load_model()
+            # print("Embedding Model loaded.")
             
-            print("Loading Embedding Model...")
-            EmbeddingService().load_model()
-            print("Embedding Model loaded.")
-            
-            print("Initializing Vector Store...")
-            FAISSStore().initialize()
-            print("Vector Store initialized.")
+            # print("Initializing Vector Store...")
+            # FAISSStore().initialize()
+            # print("Vector Store initialized.")
             
         except Exception as e:
             print(f"Startup initialization failed (non-critical, retrying or continuing): {e}")

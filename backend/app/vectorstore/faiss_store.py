@@ -22,13 +22,20 @@ class FAISSStore:
         self.index = faiss.IndexFlatL2(dimension)
         self.doc_map: Dict[int, Dict] = {}  # Map FAISS ID to metadata
         self.current_id = 0
-        # self.load() -> Moved to initialize()
+        self._loaded = False
         
     def initialize(self):
         """Explicitly load the index."""
-        self.load()
+        if not self._loaded:
+            self.load()
+            self._loaded = True
+            
+    def _ensure_loaded(self):
+        if not self._loaded:
+            self.initialize()
         
     def add_vectors(self, vectors: List[List[float]], metadatas: List[dict] = None):
+        self._ensure_loaded()
         if not vectors:
             return
             
@@ -58,6 +65,7 @@ class FAISSStore:
     
     def get_all_resumes(self) -> List[Dict]:
         """Returns a list of unique resumes stored in the index."""
+        self._ensure_loaded()
         unique_resumes = {}
         for meta in self.doc_map.values():
             r_id = meta.get("resume_id")
@@ -72,6 +80,7 @@ class FAISSStore:
         For a prototype, we just remove metadata so it won't be returned in search results or lists.
         Ideally we would rebuild the index, but that requires storing raw vectors separately.
         """
+        self._ensure_loaded()
         keys_to_remove = [k for k, v in self.doc_map.items() if v.get("resume_id") == resume_id]
         for k in keys_to_remove:
             del self.doc_map[k]
@@ -82,6 +91,7 @@ class FAISSStore:
         return len(keys_to_remove) > 0
 
     def search(self, query_vector: List[float], k: int = 5, filter_resume_id: Optional[str] = None):
+        self._ensure_loaded()
         query_np = np.array([query_vector]).astype('float32')
         # We might search and find deleted items (id still in FAISS index), so we request > k
         distances, indices = self.index.search(query_np, k * 3)
