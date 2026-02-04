@@ -9,7 +9,7 @@ from app.services.llm_service import LLMService
 from app.services.jd_parser import JDParser
 
 router = APIRouter()
-llm_service = LLMService()
+# llm_service instantiated inside route
 
 # Dependency
 def get_db():
@@ -62,6 +62,7 @@ async def generate_questions(
         if not job_description or not job_description.strip():
              raise HTTPException(status_code=400, detail="Could not extract text from the provided job description input")
              
+        llm_service = LLMService()
         result = llm_service.generate_interview_questions(job_description)
         return result
     except HTTPException as he:
