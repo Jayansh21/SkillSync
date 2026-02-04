@@ -1,0 +1,38 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+.env
+.env.*
+*.log
+
+# Backend storage
+backend/storage/
+backend/uploads/
+backend/vectorstore/faiss_index
+backend/faiss_index.bin
+backend/faiss_index.bin.meta
+*.meta
+*.bin
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
+.DS_Store
+Thumbs.db
+
+# Frontend env
+frontend/.env.local
+frontend/.env
+frontend/.env.*
+
+# IDE
+.vscode/
+.idea/

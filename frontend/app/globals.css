@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+:root {
+  --color-canvas-default: #ffffff;
+  --color-canvas-subtle: #f6f8fa;
+  --color-border-default: #d0d7de;
+  --color-border-muted: #d8dee4;
+  --color-fg-default: #24292f;
+  --color-fg-muted: #57606a;
+  --color-accent-fg: #0969da;
+  --color-success-fg: #1a7f37;
+  --color-danger-fg: #cf222e;
+}
+
+body {
+  color: var(--color-fg-default);
+  background: var(--color-canvas-subtle);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+/* GitHub-inspired Components */
+.btn-primary {
+  @apply bg-[#1f883d] text-white px-4 py-2 rounded-md font-semibold text-sm border shadow-sm hover:bg-[#1a7f37] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#94d3a2];
+  border-color: rgba(27, 31, 36, 0.15);
+}
+
+.btn-secondary {
+  @apply bg-[#f6f8fa] text-[#24292f] px-4 py-2 rounded-md font-medium text-sm border shadow-sm hover:bg-[#f3f4f6] transition-all;
+  border-color: rgba(27, 31, 36, 0.15);
+}
+
+.btn-danger {
+  @apply bg-[#f6f8fa] text-[#cf222e] px-4 py-2 rounded-md font-medium text-sm border shadow-sm hover:bg-[#ffebe9] hover:text-[#a40e26] transition-all;
+  border-color: rgba(27, 31, 36, 0.15);
+}
+
+.card {
+  @apply bg-white border border-[#d0d7de] rounded-md;
+}
+
+.card:hover {
+  @apply border-[#b1bac4] shadow-sm transition-colors;
+}
+
+.input-field {
+  @apply w-full bg-[#f6f8fa] border border-[#d0d7de] rounded-md px-3 py-1.5 text-sm leading-6 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0969da] focus:border-[#0969da] transition-all placeholder-gray-500;
+}
+
+.link-default {
+  @apply text-[#0969da] hover:underline decoration-1 underline-offset-2;
+}
