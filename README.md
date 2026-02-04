@@ -1,8 +1,6 @@
 # SkillSync 🚀
 > **Your AI-Powered Career Coach & Resume Intelligence Suite.**
 
-![SkillSync Banner](https://via.placeholder.com/1200x400.png?text=SkillSync+AI+Career+Coach)
-*(Replace with actual screenshot/banner)*
 
 SkillSync is a comprehensive, AI-driven platform designed to supercharge your job search. By leveraging **LLMs (Large Language Models)**, **Vector Search**, and **ATS (Applicant Tracking System) Simulation**, SkillSync helps candidates optimize their resumes, prepare for interviews, and land their dream jobs faster.
 
@@ -169,9 +167,4 @@ Contributions are welcome! Please open an issue or submit a PR.
 
 ---
 
-## 📄 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
----
-
-**Crafted with ❤️ by the SkillSync Team.**
