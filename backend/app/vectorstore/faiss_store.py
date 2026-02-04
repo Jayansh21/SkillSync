@@ -22,7 +22,11 @@ class FAISSStore:
         self.index = faiss.IndexFlatL2(dimension)
         self.doc_map: Dict[int, Dict] = {}  # Map FAISS ID to metadata
         self.current_id = 0
-        self.load() # Load existing index if available
+        # self.load() -> Moved to initialize()
+        
+    def initialize(self):
+        """Explicitly load the index."""
+        self.load()
         
     def add_vectors(self, vectors: List[List[float]], metadatas: List[dict] = None):
         if not vectors:

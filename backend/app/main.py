@@ -16,8 +16,39 @@ from app.models.resume import Resume
 from app.models.score import ResumeScore
 from app.models.user import User
 
-# Create tables
-Base.metadata.create_all(bind=engine)
+# Create tables (Moved to startup event)
+# Base.metadata.create_all(bind=engine)
+
+import asyncio
+
+@app.on_event("startup")
+async def startup_event():
+    print("Server ready")
+    
+    async def load_models_background():
+        print("Models loading in background...")
+        try:
+            # 1. Initialize DB
+            Base.metadata.create_all(bind=engine)
+            print("Database initialized.")
+            
+            # 2. Loading AI Models
+            from app.services.embedding_service import EmbeddingService
+            from app.vectorstore.faiss_store import FAISSStore
+            
+            print("Loading Embedding Model...")
+            EmbeddingService().load_model()
+            print("Embedding Model loaded.")
+            
+            print("Initializing Vector Store...")
+            FAISSStore().initialize()
+            print("Vector Store initialized.")
+            
+        except Exception as e:
+            print(f"Startup initialization failed (non-critical, retrying or continuing): {e}")
+
+    # Schedule the task to run in the background
+    asyncio.create_task(load_models_background())
 
 # Set all CORS enabled origins
 origins = [
