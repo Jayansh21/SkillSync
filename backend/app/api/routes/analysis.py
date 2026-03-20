@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from typing import Optional
+from sqlalchemy.orm import Session
+from app.api.deps import get_db
 from app.services.similarity_service import SimilarityService
 from app.services.jd_parser import JDParser
 
@@ -12,7 +14,8 @@ async def match_job_description(
     jd_text: Optional[str] = Form(None),
     jd_url: Optional[str] = Form(None),
     jd_file: Optional[UploadFile] = File(None),
-    top_k: int = Form(3)
+    top_k: int = Form(3),
+    db: Session = Depends(get_db)
 ):
     try:
         # Extract JD text
@@ -39,7 +42,8 @@ async def match_job_description(
         results = similarity_service.find_similar_resumes(
             job_description, 
             k=top_k,
-            resume_id=resume_id
+            resume_id=resume_id,
+            db=db
         )
         return results
     except HTTPException as he:

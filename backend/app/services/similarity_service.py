@@ -1,7 +1,9 @@
 from typing import List, Dict, Tuple
+from sqlalchemy.orm import Session
 from app.services.embedding_service import EmbeddingService
 from app.vectorstore.faiss_store import FAISSStore
 from app.utils.text_cleaner import TextCleaner
+from app.models.resume import Resume
 import numpy as np
 
 class SimilarityService:
@@ -10,10 +12,10 @@ class SimilarityService:
         self.vector_store = FAISSStore()
 
     
-    def find_similar_resumes(self, job_description: str, k: int = 5, resume_id: str = None) -> Dict:
+    def find_similar_resumes(self, job_description: str, k: int = 5, resume_id: str = None, db: Session = None) -> Dict:
         # Import here to avoid circular dependencies if any
         from app.services.llm_service import LLMService
-        from app.services.resume_parser import ResumeParser
+        # from app.services.resume_parser import ResumeParser # Removed as we use DB now
         llm_service = LLMService()
 
         # 1. Clean and Embed Request
@@ -28,17 +30,17 @@ class SimilarityService:
         resume_meta: Dict[str, Dict] = {}
         
         for dist, idx, metadata in raw_results:
-            resume_id = metadata.get("resume_id")
-            if not resume_id:
+            r_id = metadata.get("resume_id") # Variable name fix (metadata uses resume_id)
+            if not r_id:
                 continue
             
             similarity = float(1 - (dist / 2))
             
-            if resume_id not in resume_scores:
-                resume_scores[resume_id] = []
-                resume_meta[resume_id] = metadata
+            if r_id not in resume_scores:
+                resume_scores[r_id] = []
+                resume_meta[r_id] = metadata
             
-            resume_scores[resume_id].append(similarity)
+            resume_scores[r_id].append(similarity)
 
         # 4. Compute Final Scores per Resume
         final_results = []
@@ -51,24 +53,29 @@ class SimilarityService:
                 "resume_id": r_id,
                 "score": float(final_score * 100), 
                 "filename": resume_meta[r_id].get("filename"),
-                "filepath": resume_meta[r_id].get("source") # Assuming source is filepath
+                "filepath": resume_meta[r_id].get("filepath") or resume_meta[r_id].get("source") # Handle both keys
             })
             
         final_results.sort(key=lambda x: x["score"], reverse=True)
         top_matches = final_results[:k]
+        
         # 5. LLM Analysis for Top Matches
-        # We need to re-read the resume text to send to LLM.
-        # Ideally, we would have stored text in a DB. For this file-based version, re-read.
+        # Retrieve text from Database using injected Session
         for match in top_matches:
-            filepath = match.get("filepath")
-            if filepath:
+            resume_text = ""
+            if db:
                 try:
-                    # Re-parse to get text (clean text only needed)
-                    # Optimization: create a retrieve_text method in Parser or Store
-                    # Since we added filtering, we are likely analyzing just one resume if resume_id was passed.
-                    parsed = ResumeParser.parse_file(filepath) 
-                    resume_text = parsed["content"]
-                    
+                    db_resume = db.query(Resume).filter(Resume.resume_id == match["resume_id"]).first()
+                    if db_resume and db_resume.extracted_text:
+                        resume_text = db_resume.extracted_text
+                except Exception as e:
+                    print(f"Error retrieving resume from DB: {e}")
+
+            # Fallback (optional, maybe check file if local? But we are Cloud now)
+            # If no text, we can't analyze.
+            
+            if resume_text:
+                try:
                     analysis = llm_service.analyze_skill_gap(resume_text, cleaned_jd)
                     
                     match.update({
@@ -78,6 +85,8 @@ class SimilarityService:
                     })
                 except Exception as e:
                     print(f"Error analyzing with LLM: {e}")
+            else:
+                print(f"Warning: No text found for resume {match['resume_id']}, skipping LLM analysis.")
                     
         # 6. Generate Interview Questions (Global)
         interview_questions = llm_service.generate_interview_questions(cleaned_jd)

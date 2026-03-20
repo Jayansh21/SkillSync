@@ -1,103 +1,141 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Body
 from sqlalchemy.orm import Session
-from app.db.session import SessionLocal
-from app.models.user import User
+from app.api.deps import get_db
 from app.schemas.auth import UserCreate, UserLogin, Token, ForgotPasswordRequest, ResetPasswordRequest
-from app.core.security import get_password_hash, verify_password, create_access_token
-import datetime
-import secrets
+from app.core.config import settings
+import requests
 
 router = APIRouter()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Supabase Auth Endpoints
+SUPABASE_AUTH_URL = f"{settings.SUPABASE_URL}/auth/v1"
+HEADERS = {"apikey": settings.SUPABASE_KEY, "Content-Type": "application/json"}
 
 @router.post("/register", response_model=Token)
-def register(user_in: UserCreate, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == user_in.email).first()
-    if user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+def register(response: Response, user_in: UserCreate):
+    url = f"{SUPABASE_AUTH_URL}/signup"
+    payload = {
+        "email": user_in.email,
+        "password": user_in.password,
+        "data": {"full_name": user_in.email.split("@")[0]} # Default metadata
+    }
     
-    hashed_pass = get_password_hash(user_in.password)
-    new_user = User(email=user_in.email, hashed_password=hashed_pass)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    api_resp = requests.post(url, json=payload, headers=HEADERS)
     
-    access_token = create_access_token(data={"sub": new_user.email})
+    if api_resp.status_code != 200:
+        raise HTTPException(status_code=400, detail=api_resp.json().get("msg", "Registration failed"))
+        
+    data = api_resp.json()
+    access_token = data.get("access_token")
+    
+    if access_token:
+        expires_in = data.get("expires_in", 3600)
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            max_age=expires_in,
+            samesite="lax",
+            secure=False
+        )
+        refresh_token = data.get("refresh_token")
+        if refresh_token:
+            response.set_cookie(
+                key="refresh_token",
+                value=refresh_token,
+                httponly=True,
+                samesite="lax",
+                secure=False
+            )
+            
+    if not access_token:
+        # Check if auto-confirm is off
+        if "id" in data:
+             return {"access_token": "check_email_confirmation", "token_type": "bearer"} # Placeholder for UI
+        raise HTTPException(status_code=400, detail="Registration processed but no session returned")
+        
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/login", response_model=Token)
-def login(user_in: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == user_in.email).first()
-    if not user or not verify_password(user_in.password, user.hashed_password):
+def login(response: Response, user_in: UserLogin):
+    url = f"{SUPABASE_AUTH_URL}/token?grant_type=password"
+    payload = {"email": user_in.email, "password": user_in.password}
+    
+    api_resp = requests.post(url, json=payload, headers=HEADERS)
+    
+    if api_resp.status_code != 200:
         raise HTTPException(status_code=401, detail="Incorrect email or password")
         
-    access_token = create_access_token(data={"sub": user.email})
+    data = api_resp.json()
+    access_token = data.get("access_token")
+    refresh_token = data.get("refresh_token")
+    
+    # SET HTTP-ONLY COOKIE
+    # Expires in however many seconds Supabase says (usually 3600)
+    expires_in = data.get("expires_in", 3600)
+    
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        max_age=expires_in,
+        samesite="lax",
+        secure=False 
+        # Set secure=True in production!
+    )
+    
+    # Optional: Set refresh token too if we want to implement refresh
+    if refresh_token:
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            samesite="lax",
+            secure=False
+        )
+
     return {"access_token": access_token, "token_type": "bearer"}
 
-from app.services.email_service import send_email
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
+    return {"message": "Logged out successfully"}
 
 @router.post("/forgot-password")
-def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == request.email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User does not exist")
+def forgot_password(request: ForgotPasswordRequest):
+    url = f"{SUPABASE_AUTH_URL}/recover"
+    payload = {"email": request.email}
     
-    token = secrets.token_urlsafe(32)
-    user.reset_token = token
-    user.reset_token_expiry = datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
-    db.commit()
+    # This sends the email from Supabase
+    api_resp = requests.post(url, json=payload, headers=HEADERS)
     
-    reset_link = f"http://localhost:3000/reset-password?token={token}"
-    
-    # 1. Print to console (Fallback/Dev)
-    print(f"RESET LINK FOR {user.email}: {reset_link}")
-    
-    # 2. Send Real Email
-    subject = "Reset your SkillSync password"
-    body_text = f"Hello,\n\nYou requested a password reset. Please use the following link to reset your password:\n\n{reset_link}\n\nThis link expires in 15 minutes.\n\nIf you did not request this, please ignore this email."
-    
-    body_html = f"""
-    <html>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <h2>Password Reset Request</h2>
-        <p>Hello,</p>
-        <p>You requested a password reset for your SkillSync account.</p>
-        <p>Please click the button below to reset your password:</p>
-        <p>
-          <a href="{reset_link}" style="background-color: #2ea44f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
-        </p>
-        <p>Or copy and paste this link into your browser:</p>
-        <p><a href="{reset_link}">{reset_link}</a></p>
-        <p>This link expires in 15 minutes.</p>
-        <hr>
-        <p style="font-size: 12px; color: #666;">If you did not request this, please ignore this email.</p>
-      </body>
-    </html>
-    """
-    
-    # Send asynchronously or synchronously (function is sync but logging prevents crash)
-    send_email(user.email, subject, body_html, body_text)
-    
+    if api_resp.status_code != 200:
+        # Don't reveal if user exists or not for security, but for now:
+        # raise HTTPException(status_code=400, detail="Failed to send reset email")
+        pass
+        
     return {"message": "If the email is registered, a reset link has been sent."}
 
 @router.post("/reset-password")
-def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.reset_token == request.token).first()
+def reset_password(request: ResetPasswordRequest):
+    # User provides the access_token (from email link) and new_password
+    # Since we are using cookies, the "access_token" might be in the request body if the frontend extracted it from the URL fragment
+    # Or, the user might need to pass it explicitly.
+    # The ResetPasswordRequest model typically has 'token' + 'new_password'.
     
-    if not user or not user.reset_token_expiry or user.reset_token_expiry < datetime.datetime.utcnow():
-        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    url = f"{SUPABASE_AUTH_URL}/user"
+    # We must authorize as the user to update their password
+    user_headers = HEADERS.copy()
+    user_headers["Authorization"] = f"Bearer {request.token}"
+    
+    payload = {"password": request.new_password}
+    
+    api_resp = requests.put(url, json=payload, headers=user_headers)
+    
+    if api_resp.status_code != 200:
+        raise HTTPException(status_code=400, detail="Invalid token or password update failed")
         
-    user.hashed_password = get_password_hash(request.new_password)
-    user.reset_token = None
-    user.reset_token_expiry = None
-    db.commit()
-    
     return {"message": "Password reset successfully"}
 
 

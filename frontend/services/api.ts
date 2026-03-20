@@ -1,17 +1,22 @@
 import axios from 'axios';
+import { supabase } from '../utils/supabaseClient';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 const api = axios.create({
     baseURL: API_URL,
+    // withCredentials: true, // Removed, we use Bearer header now
 });
 
-api.interceptors.request.use((config) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+// Add a request interceptor to attach the Supabase token
+api.interceptors.request.use(async (config) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
     }
     return config;
+}, (error) => {
+    return Promise.reject(error);
 });
 
 export const healthCheck = async () => {
@@ -102,29 +107,45 @@ export const generateInterviewQuestions = async (
     return response.data;
 };
 
+// Auth functions now handled by Frontend Supabase SDK mostly, but we might keep these or remove if unused.
+// If you want to sync user or just login, we can keep them for now, but UI should switch to Supabase.
+// Assuming UI will be updated to use supabase.auth directly in components, 
+// OR we wrap supabase.auth here. Let's wrap it here for consistency if UI calls these.
+
 export const registerUser = async (email: string, password: string) => {
-    const params = new URLSearchParams();
-    // OAuth2PasswordRequestForm usually expects form data, but our Pydantic model UserCreate expects JSON.
-    // Wait, the backend route uses UserCreate Pydantic model. Sending JSON is correct.
-    const response = await api.post('/auth/register', { email, password });
-    return response.data;
+    // Check if we should use Supabase SDK directly
+    const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+    });
+    if (error) throw error;
+
+    // Optional: Call backend to ensure user is synced immediately, 
+    // although the backend will sync on first request anyway.
+    return data;
 };
 
 export const loginUser = async (email: string, password: string) => {
-    const response = await api.post('/auth/login', { email, password });
-    return response.data;
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+    });
+    if (error) throw error;
+    return data.session;
 };
 
 export const forgotPassword = async (email: string) => {
-    const response = await api.post('/auth/forgot-password', { email });
-    return response.data;
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
+    return { message: "Password reset email sent" };
 };
 
 export const resetPassword = async (token: string, new_password: string) => {
-    const response = await api.post('/auth/reset-password', { token, new_password });
-    return response.data;
+    // This flow is different in Supabase (User clicks link -> gets session -> updates user).
+    // Typically handled in a ResetPassword page.
+    const { error } = await supabase.auth.updateUser({ password: new_password });
+    if (error) throw error;
+    return { message: "Password updated" };
 };
-
-
 
 export default api;

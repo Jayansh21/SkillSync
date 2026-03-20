@@ -18,13 +18,28 @@ function LoginForm() {
         setError('');
 
         try {
-            const data = await loginUser(email, password);
-            if (data.access_token) {
-                localStorage.setItem('token', data.access_token);
+            const session = await loginUser(email, password);
+            // Session managed by Supabase client (persisted in storage/cookies automatically)
+            if (session) {
                 router.push('/dashboard/home');
             }
         } catch (err: any) {
-            setError('Invalid email or password');
+            setError(err.message || 'Invalid email or password');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDemoLogin = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const session = await loginUser('demo@skillsync.ai', 'Demo@12345');
+            if (session) {
+                router.push('/dashboard/home');
+            }
+        } catch (err: any) {
+            setError(err.message || 'Demo login failed');
         } finally {
             setLoading(false);
         }
@@ -79,6 +94,15 @@ function LoginForm() {
                         className="btn-primary w-full"
                     >
                         {loading ? 'Signing in...' : 'Sign in'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleDemoLogin}
+                        disabled={loading}
+                        className="w-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium py-2 px-4 rounded-md transition-colors border border-gray-300"
+                    >
+                        Demo Login
                     </button>
                 </form>
             </div>

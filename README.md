@@ -1,170 +1,195 @@
-# SkillSync 🚀
-> **Your AI-Powered Career Coach & Resume Intelligence Suite.**
+# SkillSync
 
+An AI-powered career platform that helps job seekers optimize their resumes, prepare for interviews, and improve their job application success rate through intelligent analysis and personalized coaching.
 
-SkillSync is a comprehensive, AI-driven platform designed to supercharge your job search. By leveraging **LLMs (Large Language Models)**, **Vector Search**, and **ATS (Applicant Tracking System) Simulation**, SkillSync helps candidates optimize their resumes, prepare for interviews, and land their dream jobs faster.
+## Overview
 
-Built with meaningful automation and a user-first design philosophy.
+SkillSync uses natural language processing and vector similarity search to analyze resumes against job descriptions, providing actionable insights and ATS compatibility scores. The platform includes resume parsing, keyword gap analysis, intelligent job matching, and personalized interview preparation tools.
 
----
+## Key Features
 
-## 🌟 Key Features
+### Resume Analysis & ATS Scoring
 
-### 🧠 1. Smart Resume Analysis & ATS Scoring
-- **Automated Parsing**: Extracts text from PDF resumes accurately.
-- **ATS Simulation**: Scores your resume (0-100) based on keyword matching, formatting, and readability.
-- **Missing Keyword Detection**: Identifies critical skills missing from your resume compared to a target Job Description (JD).
+- Automated text extraction from PDF resumes
+- ATS compatibility scoring (0-100) based on keyword matching, formatting, and readability
+- Missing keyword detection comparing resume content against target job descriptions
+- Detailed feedback on resume improvement areas
 
-### 🎯 2. Intelligent Job Matching
-- **Vector Similarity Search**: Uses `all-MiniLM-L6-v2` embeddings to semantically match your resume against provided JDs.
-- **Gap Analysis**: Provides specific, actionable feedback on how to bridge the gap between your profile and the role requirements.
+### Job Matching
 
-### 🎙️ 3. Personalized Interview Coach
-- **AI Question Generator**: Generates tailored technical, behavioral, and situational interview questions based on your specific resume content and the JD.
-- **Role-Playing**: (Planned) Interactive mock interview sessions.
+- Vector similarity search using all-MiniLM-L6-v2 embeddings for semantic matching
+- Gap analysis identifying specific skill and experience differences
+- Actionable recommendations to align candidate profiles with role requirements
 
-### 🔒 4. Secure Authentication
-- **Full Auth Suite**: Sign up, Login, Forgot Password, and Reset Password flows.
-- **Email Integration**: Real SMTP email dispatch for password recovery (via Gmail).
-- **Security**: JWT-based stateless authentication with password hashing (Bcrypt).
+### Interview Preparation
 
----
+- AI-generated interview questions tailored to resume content and job descriptions
+- Technical, behavioral, and situational question categories
+- Context-aware question generation based on candidate experience level
 
-## 🏗️ Architecture
+### Authentication & Security
 
-SkillSync follows a modern **Client-Server** architecture:
+- Complete authentication flow including signup, login, and password recovery
+- JWT-based stateless authentication
+- Password hashing with bcrypt
+- Email integration via SMTP for password reset functionality
 
-- **Frontend**: [Next.js 14](https://nextjs.org/) (App Directory)
-  - **Styling**: Tailwind CSS for responsive, pixel-perfect UI.
-  - **Icons**: Lucide React.
-  - **State**: React Hooks & Context API.
+## Technical Architecture
 
-- **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.10+)
-  - **Database**: SQLite (Dev) / PostgreSQL (Supabase Ready).
-  - **ORM**: SQLAlchemy.
-  - **AI/ML**:
-    - `Groq API` (LLM inference for coaching/analysis).
-    - `SentenceTransformers` (Embeddings).
-    - `FAISS` (Vector Store for efficient similarity search).
-  - **Auth**: OAuth2 with JWT.
+### Frontend
 
----
+- **Framework**: Next.js 14 with App Directory
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **HTTP Client**: Axios
+- **Icons**: Lucide React
 
-## 🛠️ Tech Stack
+### Backend
 
-| Component | Technology |
-| :--- | :--- |
-| **Frontend** | Next.js 14, TypeScript, Tailwind CSS, Axios |
-| **Backend** | FastAPI, Python, Pydantic, Uvicorn |
-| **Database** | SQLite (Local), PostgreSQL (Supabase) |
-| **AI Models** | LLaMA / Mixtral (via Groq), all-MiniLM-L6-v2 |
-| **Storage** | Local FS (Uploads) |
-| **Auth** | JWT, bcrypt, python-multipart |
+- **Framework**: FastAPI (Python 3.10+)
+- **Database**: SQLite (development) / PostgreSQL (production-ready via Supabase)
+- **ORM**: SQLAlchemy
+- **AI/ML Stack**:
+  - Groq API for LLM inference
+  - SentenceTransformers for embedding generation
+  - FAISS for vector similarity search
+- **Authentication**: OAuth2 with JWT tokens
+- **Email**: SMTP integration for transactional emails
 
----
+### Tech Stack Summary
 
-## 🚀 Getting Started
+| Component      | Technology                             |
+| -------------- | -------------------------------------- |
+| Frontend       | Next.js 14, TypeScript, Tailwind CSS   |
+| Backend        | FastAPI, Python 3.10+                  |
+| Database       | SQLite, PostgreSQL                     |
+| AI Models      | LLaMA/Mixtral (Groq), all-MiniLM-L6-v2 |
+| Storage        | Local filesystem                       |
+| Authentication | JWT, bcrypt                            |
+
+## Installation
 
 ### Prerequisites
-- Node.js (v18+)
-- Python (v3.10+)
+
+- Node.js v18 or higher
+- Python 3.10 or higher
 - Git
 
-### 1. Clone the Repository
+### Setup Instructions
+
+1. **Clone the repository**
+
 ```bash
 git clone https://github.com/yourusername/skillsync.git
 cd skillsync
 ```
 
-### 2. Backend Setup
+2. **Backend setup**
+
 ```bash
 cd backend
 python -m venv venv
 
-# Windows
+# Activate virtual environment
+# Windows:
 venv\Scripts\activate
-# Mac/Linux
+# macOS/Linux:
 source venv/bin/activate
 
+# Install dependencies
 pip install -r requirements.txt
 
-# Run the server
+# Start the server
 uvicorn app.main:app --reload
 ```
-*Backend runs on `http://localhost:8000`*
 
-### 3. Frontend Setup
+The backend server will run at `http://localhost:8000`
+
+3. **Frontend setup**
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-*Frontend runs on `http://localhost:3005` (or 3000)*
 
----
+The frontend application will run at `http://localhost:3005`
 
-## 🔐 Environment Variables
+## Configuration
 
-### Backend (`backend/.env`)
-Copy the example file:
+### Backend Environment Variables
+
+Create a `.env` file in the backend directory:
+
 ```bash
 cp .env.example .env
 ```
-Fill in the following keys:
-- `GROQ_API_KEY`: Your Groq Cloud API Key.
-- `SMTP_*`: Settings for email sending (optional for local dev).
-- `DATABASE_URL`: Connection string (auto-defaults to SQLite if left empty).
 
-### Frontend (`frontend/.env.local`)
-Copy the example file:
+Required environment variables:
+
+- `GROQ_API_KEY`: API key for Groq Cloud
+- `SMTP_SERVER`: SMTP server hostname (optional for local development)
+- `SMTP_PORT`: SMTP server port
+- `SMTP_USERNAME`: SMTP authentication username
+- `SMTP_PASSWORD`: SMTP authentication password
+- `SMTP_FROM_EMAIL`: Sender email address
+- `DATABASE_URL`: Database connection string (defaults to SQLite if not specified)
+
+### Frontend Environment Variables
+
+Create a `.env.local` file in the frontend directory:
+
 ```bash
 cp .env.example .env.local
 ```
-- `NEXT_PUBLIC_API_URL`: `http://localhost:8000/api/v1`
 
----
+Required environment variables:
 
-## 📦 Project Structure
+- `NEXT_PUBLIC_API_URL`: Backend API URL (default: `http://localhost:8000/api/v1`)
+
+## Project Structure
 
 ```
 skillsync/
 ├── backend/
 │   ├── app/
-│   │   ├── api/          # Route handlers
-│   │   ├── core/         # Config & Security
-│   │   ├── db/           # Database session & Base
-│   │   ├── models/       # SQLAlchemy Models
-│   │   ├── schemas/      # Pydantic Schemas
-│   │   └── services/     # Business Logic (AI, Resume, Email)
-│   ├── uploads/          # Local resume storage
+│   │   ├── api/          # API route handlers
+│   │   ├── core/         # Configuration and security
+│   │   ├── db/           # Database session and base
+│   │   ├── models/       # SQLAlchemy models
+│   │   ├── schemas/      # Pydantic schemas
+│   │   └── services/     # Business logic and AI services
+│   ├── uploads/          # Resume file storage
 │   └── requirements.txt
 │
 └── frontend/
-    ├── app/              # Next.js App Router Pages
-    ├── components/       # Reusable UI Components
-    ├── services/         # API Client (Axios)
+    ├── app/              # Next.js pages (App Router)
+    ├── components/       # React components
+    ├── services/         # API client services
     └── public/           # Static assets
 ```
 
----
+## API Documentation
 
-## 🔮 Future Roadmap
-- [ ] **Cloud Storage**: Migrate file uploads to AWS S3 / Supabase Storage.
-- [ ] **React Native App**: Mobile version for on-the-go prep.
-- [ ] **Mock Interviews**: Voice-to-text integration for real-time answers.
-- [ ] **Job Board**: Scrape and aggregate relevant listings.
+Once the backend is running, access the interactive API documentation at:
 
----
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
 
-## 🤝 Contributing
-Contributions are welcome! Please open an issue or submit a PR.
+## Development
 
-1. Fork the repo.
-2. Create your feature branch: `git checkout -b feature/AmazingFeature`
-3. Commit your changes: `git commit -m 'Add some AmazingFeature'`
-4. Push to the branch: `git push origin feature/AmazingFeature`
-5. Open a Pull Request.
+### Running Tests
 
----
+```bash
+# Backend
+cd backend
+pytest
 
+# Frontend
+cd frontend
+npm test
+```
 
+### Code Quality
+
+The project uses ESLint for JavaScript/TypeScript linting and follows PEP 8 guidelines for Python code.

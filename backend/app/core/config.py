@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     # AI - Groq
     GROQ_API_KEY: str = "gsk_..."
 
+    # Supabase Auth
+    SUPABASE_URL: str = "https://your-project.supabase.co"
+    SUPABASE_KEY: str = "your-anon-key"
+    SUPABASE_JWT_SECRET: str = "your-jwt-secret"
+
     class Config:
         case_sensitive = True
         env_file = ".env"

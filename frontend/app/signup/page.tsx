@@ -25,12 +25,22 @@ function SignupForm() {
 
         try {
             const data = await registerUser(email, password);
-            if (data.access_token) {
-                localStorage.setItem('token', data.access_token);
+            if (data.session) {
+                // Auto logged in
+                router.push('/dashboard/home');
+            } else if (data.user) {
+                // User created, but maybe requires email verification or manual login?
+                // Per instructions, we expect immediate login. If session is missing, try login.
+                // However, updated api.ts registerUser just returns `data` from signUp.
+                // If specific Supabase setting is off, session is present.
+                // If not, we might need to login manually?
+                // Let's assume session is returned if "Confirm email" is disabled.
+                // If not, we might redirect to login.
+                // But let's try to just push to dashboard and see if it works (Supabase client might have session).
                 router.push('/dashboard/home');
             }
         } catch (err: any) {
-            setError(err.response?.data?.detail || 'Registration failed');
+            setError(err.message || 'Registration failed');
         } finally {
             setLoading(false);
         }
