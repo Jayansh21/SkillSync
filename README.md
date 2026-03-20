@@ -127,12 +127,14 @@ cp .env.example .env
 
 Required environment variables:
 
-- `GROQ_API_KEY`: API key for Groq Cloud
-- `SMTP_SERVER`: SMTP server hostname (optional for local development)
-- `SMTP_PORT`: SMTP server port
-- `SMTP_USERNAME`: SMTP authentication username
-- `SMTP_PASSWORD`: SMTP authentication password
-- `SMTP_FROM_EMAIL`: Sender email address
+- `GROQ_API_KEY`: API key for Groq Cloud (required for AI features)
+- `SECRET_KEY`: Secret key for JWT token encryption (change from default)
+- `ACCESS_TOKEN_EXPIRE_MINUTES`: JWT token expiration time (default: 30)
+- `SMTP_SERVER`: SMTP server hostname (default: smtp.gmail.com, optional for local dev)
+- `SMTP_PORT`: SMTP server port (default: 587, optional for local dev)
+- `SMTP_USER`: SMTP authentication username (optional for local dev)
+- `SMTP_PASSWORD`: SMTP authentication password (optional for local dev)
+- `FROM_EMAIL`: Sender email address for password reset emails (optional for local dev)
 - `DATABASE_URL`: Database connection string (defaults to SQLite if not specified)
 
 ### Frontend Environment Variables
@@ -158,7 +160,9 @@ skillsync/
 │   │   ├── db/           # Database session and base
 │   │   ├── models/       # SQLAlchemy models
 │   │   ├── schemas/      # Pydantic schemas
-│   │   └── services/     # Business logic and AI services
+│   │   ├── services/     # Business logic and AI services
+│   │   ├── utils/        # Utility functions
+│   │   └── vectorstore/  # FAISS vector store management
 │   ├── uploads/          # Resume file storage
 │   └── requirements.txt
 │
@@ -166,7 +170,7 @@ skillsync/
     ├── app/              # Next.js pages (App Router)
     ├── components/       # React components
     ├── services/         # API client services
-    └── public/           # Static assets
+    └── utils/            # Utility functions
 ```
 
 ## API Documentation
