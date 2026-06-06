@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { resetPassword } from '../../services/api';
+import { supabase } from '../../utils/supabaseClient';
 
 function ResetPasswordForm() {
     const [password, setPassword] = useState('');
@@ -11,9 +12,58 @@ function ResetPasswordForm() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
+    const [token, setToken] = useState<string | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
-    const token = searchParams.get('token');
+
+    useEffect(() => {
+        const establishSession = async () => {
+            let accessToken: string | null = null;
+            let refreshToken: string | null = null;
+
+            // 1. Try to get token from query parameters (e.g. ?token=xxx)
+            const queryToken = searchParams.get('token');
+            if (queryToken) {
+                accessToken = queryToken;
+            }
+
+            // 2. Try to get access_token and refresh_token from URL hash fragment
+            // Standard Supabase redirect format: #access_token=xxx&refresh_token=yyy&type=recovery
+            if (typeof window !== 'undefined' && window.location.hash) {
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                const hashAccessToken = hashParams.get('access_token');
+                const hashRefreshToken = hashParams.get('refresh_token');
+                if (hashAccessToken) {
+                    accessToken = hashAccessToken;
+                }
+                if (hashRefreshToken) {
+                    refreshToken = hashRefreshToken;
+                }
+            }
+
+            if (accessToken) {
+                setToken(accessToken);
+                try {
+                    // Establish a valid Supabase session explicitly using the extracted tokens
+                    const { error } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken || "",
+                    });
+                    if (error) {
+                        setError('Failed to establish recovery session. The link may have expired.');
+                        console.error('setSession error:', error.message);
+                    } else {
+                        console.log('Recovery session established successfully');
+                    }
+                } catch (err: any) {
+                    setError('Error initializing session.');
+                    console.error('setSession unexpected error:', err);
+                }
+            }
+        };
+
+        establishSession();
+    }, [searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,11 +90,12 @@ function ResetPasswordForm() {
             await resetPassword(token, password);
             setSuccess(true);
         } catch (err: any) {
-            setError('Failed to reset password. The link may have expired.');
+            setError(err.message || 'Failed to reset password. The link may have expired.');
         } finally {
             setLoading(false);
         }
     };
+
 
     if (success) {
         return (
