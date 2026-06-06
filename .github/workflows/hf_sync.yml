@@ -19,7 +19,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           # Replace 'Jayansh21/skillsync-backend' with your actual HF username/space-name
-          HF_SPACE_REPO: "Jayansh21/skillsync-backend"
+          HF_SPACE_REPO: "jayansh21/skillsync-backend"
         run: |
           # 1. Configure git credentials
           git config --global user.email "actions@github.com"
