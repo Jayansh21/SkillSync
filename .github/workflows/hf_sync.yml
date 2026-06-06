@@ -1,0 +1,52 @@
+name: Sync to Hugging Face Spaces
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+
+jobs:
+  sync-to-huggingface:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync and Push to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          # Replace 'Jayansh21/skillsync-backend' with your actual HF username/space-name
+          HF_SPACE_REPO: "Jayansh21/skillsync-backend"
+        run: |
+          # 1. Configure git credentials
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+
+          # 2. Clone the Hugging Face Space repo using the write token
+          git clone https://x-access-token:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE_REPO hf_space_dir
+
+          # 3. Clean the space directory (except the .git folder)
+          cd hf_space_dir
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' -exec rm -rf {} +
+          cd ..
+
+          # 4. Copy backend files to the cloned space repo
+          cp -r backend/* hf_space_dir/
+          if [ -f backend/.dockerignore ]; then
+            cp backend/.dockerignore hf_space_dir/
+          fi
+
+          # 5. Commit and push to Hugging Face
+          cd hf_space_dir
+          git add -A
+          
+          # Only commit and push if there are changes
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "sync: github commit ${{ github.sha }} to HF Space"
+            git push origin main --force
+          else
+            echo "No changes detected. Skipping deployment."
+          fi
