@@ -1,4 +1,6 @@
+# SkillSync Backend Dockerfile for Hugging Face Spaces
 FROM python:3.11-slim
+
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
