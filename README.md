@@ -67,87 +67,154 @@ SkillSync uses natural language processing and vector similarity search to analy
 | Storage        | Local filesystem                       |
 | Authentication | JWT, bcrypt                            |
 
-## Installation
+## Getting Started & Installation
 
-### Prerequisites
+### Option 1: Quick Start with Docker (Recommended)
 
+The easiest way to run the entire SkillSync stack (Frontend & Backend) is using Docker Compose.
+
+#### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+
+#### Run Steps
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/skillsync.git
+   cd skillsync
+   ```
+
+2. **Set up Environment Variables**
+   Create a `.env` file in the `backend/` directory and `.env.local` in `frontend/` directory (see [Configuration](#configuration) below).
+
+3. **Start the Application**
+   ```bash
+   docker-compose up --build
+   ```
+   - **Frontend**: http://localhost:3000
+   - **Backend**: http://localhost:8000
+   - **API Docs**: http://localhost:8000/docs
+
+---
+
+### Option 2: Manual Local Installation
+
+If you prefer to run the components directly on your host machine:
+
+#### Prerequisites
 - Node.js v18 or higher
-- Python 3.10 or higher
+- Python 3.11 or higher
 - Git
 
-### Setup Instructions
+#### Setup Steps
 
 1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/skillsync.git
+   cd skillsync
+   ```
 
-```bash
-git clone https://github.com/yourusername/skillsync.git
-cd skillsync
-```
+2. **Backend Setup**
+   ```bash
+   cd backend
+   python -m venv venv
 
-2. **Backend setup**
+   # Activate virtual environment
+   # Windows:
+   venv\Scripts\activate
+   # macOS/Linux:
+   source venv/bin/activate
 
-```bash
-cd backend
-python -m venv venv
+   # Install dependencies (CPU-optimized PyTorch is recommended for light weight)
+   pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
+   # Start the server
+   uvicorn app.main:app --reload
+   ```
+   The backend server will run at `http://localhost:8000`.
 
-# Install dependencies
-pip install -r requirements.txt
+3. **Frontend Setup**
+   ```bash
+   cd ../frontend
+   npm install
+   npm run dev
+   ```
+   The frontend application will run at `http://localhost:3000` (or `http://localhost:3001` if port 3000 is taken).
 
-# Start the server
-uvicorn app.main:app --reload
-```
-
-The backend server will run at `http://localhost:8000`
-
-3. **Frontend setup**
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The frontend application will run at `http://localhost:3005`
+---
 
 ## Configuration
 
-### Backend Environment Variables
+### Backend Environment Variables (`backend/.env`)
 
-Create a `.env` file in the backend directory:
-
+Create a `.env` file in the `backend/` directory by copying `.env.example`:
 ```bash
-cp .env.example .env
+cp backend/.env.example backend/.env
 ```
 
-Required environment variables:
+| Key | Description | Default / Example |
+|---|---|---|
+| `GROQ_API_KEY` | API key for Groq Cloud (LLM inference) | `gsk_...` |
+| `SECRET_KEY` | Secret key for JWT encryption | `changethis` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Token expiry in minutes | `11520` (8 days) |
+| `BACKEND_CORS_ORIGINS` | Allowed CORS origins (comma-separated) | `http://localhost:3000` |
+| `DATABASE_URL` | SQLAlchemy Connection URI | `sqlite:///./sql_app.db` or PostgreSQL |
+| `SUPABASE_URL` | Supabase project URL | `https://your-project.supabase.co` |
+| `SUPABASE_KEY` | Supabase Anon/Public Key | `your-anon-key` |
+| `SUPABASE_JWT_SECRET` | Supabase JWT Secret (for JWT validations) | `your-jwt-secret` |
 
-- `GROQ_API_KEY`: API key for Groq Cloud (required for AI features)
-- `SECRET_KEY`: Secret key for JWT token encryption (change from default)
-- `ACCESS_TOKEN_EXPIRE_MINUTES`: JWT token expiration time (default: 30)
-- `SMTP_SERVER`: SMTP server hostname (default: smtp.gmail.com, optional for local dev)
-- `SMTP_PORT`: SMTP server port (default: 587, optional for local dev)
-- `SMTP_USER`: SMTP authentication username (optional for local dev)
-- `SMTP_PASSWORD`: SMTP authentication password (optional for local dev)
-- `FROM_EMAIL`: Sender email address for password reset emails (optional for local dev)
-- `DATABASE_URL`: Database connection string (defaults to SQLite if not specified)
+### Frontend Environment Variables (`frontend/.env.local`)
 
-### Frontend Environment Variables
-
-Create a `.env.local` file in the frontend directory:
-
+Create a `.env.local` file in the `frontend/` directory by copying `.env.example`:
 ```bash
-cp .env.example .env.local
+cp frontend/.env.example frontend/.env.local
 ```
 
-Required environment variables:
+| Key | Description | Default / Example |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | Backend API Endpoint URL | `http://localhost:8000/api/v1` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project URL | `https://your-project.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Anon Key | `your-anon-key` |
 
-- `NEXT_PUBLIC_API_URL`: Backend API URL (default: `http://localhost:8000/api/v1`)
+---
+
+## Production Cloud Deployment (Free Tier Stack)
+
+SkillSync is structured to run entirely on free-tier cloud infrastructure:
+1. **Frontend**: [Vercel](https://vercel.com/)
+2. **Backend**: [Hugging Face Spaces](https://huggingface.co/spaces) (Docker space)
+3. **Database / Auth / Storage**: [Supabase](https://supabase.com/)
+
+### Step 1: Database, Auth & Storage (Supabase)
+1. Create a free project on Supabase.
+2. Under **Storage**, create a **public** bucket named `resumes`.
+3. In **Database > SQL Editor**, run the migrations or schemas to create the necessary tables (`users`, `resumes`, `jobs`).
+4. Gather your Project URL, Anon Key, and JWT secret from **Project Settings > API**.
+
+### Step 2: Backend Deployment (Hugging Face Spaces)
+1. Create a new **Space** on Hugging Face.
+2. Select **Docker** as the SDK, and choose the **Blank** template.
+3. In your Space's **Settings**, add the required Environment Secrets:
+   - `GROQ_API_KEY`
+   - `DATABASE_URL` (your Supabase transaction pooler or session pooler URL)
+   - `SUPABASE_URL`
+   - `SUPABASE_KEY`
+   - `SUPABASE_JWT_SECRET`
+   - `BACKEND_CORS_ORIGINS` (your Vercel frontend URL)
+4. Commit/Push the contents of the `backend/` directory to the Space repository. Hugging Face will build the Docker container and host the API.
+
+> [!NOTE]
+> **Stateless FAISS Index Recovery**: On Space startup, the backend automatically reads all existing resume documents from Supabase Postgres, generates semantic embeddings using PyTorch/SentenceTransformers, and rebuilds the local memory-efficient FAISS index. This ensures the vector store is fully stateless and self-healing across container restarts!
+
+### Step 3: Frontend Deployment (Vercel)
+1. Import the project repository into Vercel.
+2. Set the root directory of the project to `frontend/`.
+3. Configure the **Environment Variables**:
+   - `NEXT_PUBLIC_API_URL` (pointing to your Hugging Face Space URL ending in `/api/v1`)
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. Deploy.
+
+---
 
 ## Project Structure
 
@@ -163,37 +230,38 @@ skillsync/
 │   │   ├── services/     # Business logic and AI services
 │   │   ├── utils/        # Utility functions
 │   │   └── vectorstore/  # FAISS vector store management
-│   ├── uploads/          # Resume file storage
-│   └── requirements.txt
+│   ├── requirements.txt  # Python requirements (CPU PyTorch optimized)
+│   └── Dockerfile        # Backend multi-stage build file
 │
-└── frontend/
-    ├── app/              # Next.js pages (App Router)
-    ├── components/       # React components
-    ├── services/         # API client services
-    └── utils/            # Utility functions
+├── frontend/
+│   ├── app/              # Next.js App Router (pages and layouts)
+│   ├── components/       # UI Components
+│   ├── services/         # API client handlers
+│   ├── utils/            # Supabase client and utils
+│   └── Dockerfile        # Next.js multi-stage build file
+│
+└── docker-compose.yml    # Main compose file for local orchestration
 ```
 
 ## API Documentation
 
-Once the backend is running, access the interactive API documentation at:
+When the backend is running, you can access the interactive Swagger API documentation at:
+- **Swagger UI**: `/docs`
+- **ReDoc**: `/redoc`
 
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-
-## Development
+## Development & Quality
 
 ### Running Tests
-
 ```bash
-# Backend
+# Backend tests
 cd backend
 pytest
 
-# Frontend
+# Frontend tests
 cd frontend
 npm test
 ```
 
 ### Code Quality
+The project uses ESLint for JavaScript/TypeScript and follows PEP 8 guidelines for Python.
 
-The project uses ESLint for JavaScript/TypeScript linting and follows PEP 8 guidelines for Python code.

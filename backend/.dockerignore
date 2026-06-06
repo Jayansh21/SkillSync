@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.git
+.gitignore
+sql_app.db
+faiss_index.bin
+faiss_index.bin.meta
+uploads/
+.cache/
