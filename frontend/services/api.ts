@@ -135,10 +135,17 @@ export const loginUser = async (email: string, password: string) => {
 };
 
 export const forgotPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    const redirectUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/reset-password`
+        : 'https://skillsync-sooty.vercel.app/reset-password';
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+    });
     if (error) throw error;
     return { message: "Password reset email sent" };
 };
+
 
 export const resetPassword = async (token: string, new_password: string) => {
     // This flow is different in Supabase (User clicks link -> gets session -> updates user).
